@@ -18,3 +18,8 @@ Of course, the immediate solution would be to iterate through each button push s
 I tried this for the second race and came up with the correct values. So, that means we can calculate the number of wins with a single iteration of all of the time values - O(n).
 
 That extra time studying the data paid off. For part 2, the race time increased 1 million fold (eg, from 60 to 60 million). O(n^2) at that level would be expensive, but with the solution I implemented in part 1, it was just a single iteration through the 60 million values.
+
+*Update:*
+While looking at the table above, I realized that the second half of the table mirrors the first half. That means I really only need to work through the first half of the numbers and then double to get the number of wins.
+
+But wait! Everything is a loss until the first winning value, at which point everything after that is a winner (considering just the first half). So, instead of counting winners, I just need to start at 0 and count losers until I hit the first winner. Double that, substract from the total number of scenarios, and that's the answer.

@@ -34,7 +34,7 @@ func main() {
 		time, _ := strconv.Atoi(timeList[i])
 		dist, _ := strconv.Atoi(distList[i])
 		winCount := calculateWins(time, dist)
-		fmt.Printf("time: %d, dist: %d -> wins %d\n", time, dist, winCount)
+		// fmt.Printf("time: %d, dist: %d -> wins %d\n", time, dist, winCount)
 		score *= winCount
 	}
 
@@ -47,14 +47,27 @@ func main() {
 	fmt.Println("Part 2:", winCount)
 }
 
+// func calculateWins(time, distance int) int {
+// 	winCount := 0
+
+// 	for i := 0; i <= time; i++ {
+// 		if i*(time-i) > distance {
+// 			winCount++
+// 		}
+// 	}
+
+// 	return winCount
+// }
+
 func calculateWins(time, distance int) int {
-	winCount := 0
+	wins := 0
 
 	for i := 0; i <= time; i++ {
 		if i*(time-i) > distance {
-			winCount++
+			wins = time - ((i - 1) * 2) - 1
+			break
 		}
 	}
 
-	return winCount
+	return wins
 }
