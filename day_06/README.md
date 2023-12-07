@@ -23,3 +23,10 @@ That extra time studying the data paid off. For part 2, the race time increased 
 While looking at the table above, I realized that the second half of the table mirrors the first half. That means I really only need to work through the first half of the numbers and then double to get the number of wins.
 
 But wait! Everything is a loss until the first winning value, at which point everything after that is a winner (considering just the first half). So, instead of counting winners, I just need to start at 0 and count losers until I hit the first winner. Double that, substract from the total number of scenarios, and that's the answer.
+
+*Yet another update:*
+For my puzzle input, there were 61 million time iterations to test in my original solution. Counting only losers in the first half brought that down to about 8 million. But surely there's still a better way....
+
+A discussion with my partner sparked a thought. I know the first winner is somewhere in that first half - is there maybe a faster way to find that? I was discussing big-O notation and gave an example of how an iterative search is O(n) while a binary search is O(logn). And bam! Maybe I could use binary search to find that first winner.
+
+And it turns out I can. After a little bit of finagling, I got it to work. Now instead of 8 million iterations I'm down to just 24.
