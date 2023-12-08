@@ -22,40 +22,47 @@ func main() {
 		os.Exit(1)
 	}
 
-	handList := []Hand{}
-
-	for _, line := range inputLines {
-		pos := strings.Index(line, " ")
-		cards, bidStr := line[:pos], line[pos+1:]
-		bid, _ := strconv.Atoi(bidStr)
-		handTypePart1 := calculateHandType(cards)
-		hand := Hand{
-			cards:         strings.Split(cards, ""),
-			handTypePart1: handTypePart1,
-			bid:           bid,
-		}
-		handList = append(handList, hand)
-	}
-
 	// Part 1
+	handList := buildHandList(inputLines, false)
 	orderHands(handList, cardStrengthPart1)
 	fmt.Println("Part 1:", calculateWinnings(handList))
 
 	// Part 2
-	// orderHands(handList, cardStrengthPart2)
+	handList = buildHandList(inputLines, true)
+	orderHands(handList, cardStrengthPart2)
+	fmt.Println("Part 2:", calculateWinnings(handList))
+}
+
+func buildHandList(inputLines []string, jokers bool) []Hand {
+	handList := []Hand{}
+
+	for _, line := range inputLines {
+		pos := strings.Index(line, " ")
+		cardsStr, bidStr := line[:pos], line[pos+1:]
+		cards := strings.Split(cardsStr, "")
+		bid, _ := strconv.Atoi(bidStr)
+		handType := calculateHandType(cards, jokers)
+		hand := Hand{
+			cards:    cards,
+			handType: handType,
+			bid:      bid,
+		}
+		handList = append(handList, hand)
+	}
+
+	return handList
 }
 
 type Hand struct {
-	cards         []string
-	handTypePart1 HandType
-	handTypePart2 HandType
-	bid           int
+	cards    []string
+	handType int
+	bid      int
 }
 
-type HandType int
+// type HandType int
 
 const (
-	unknown HandType = iota
+	unknown int = iota
 	HIGH
 	ONEPAIR
 	TWOPAIR
@@ -65,51 +72,87 @@ const (
 	FIVE
 )
 
-func calculateHandType(hand string) HandType {
-	cardCountMap := map[rune]int{}
+var jokerMap = [][]int{
+	// Organized by [hand type][joker count]
+	{0},                                // unknown
+	{HIGH, ONEPAIR, THREE, FOUR, FIVE}, // high
+	{ONEPAIR, THREE, FOUR, FIVE},       // one pair
+	{TWOPAIR, FULL},                    // two pair
+	{THREE, FOUR, FIVE},                // three of a kind
+	{FULL},                             // full house
+	{FOUR, FIVE},                       // four of a kind
+}
+
+func calculateHandType(hand []string, jokers bool) int {
+	cardCountMap := map[string]int{}
 
 	for _, card := range hand {
 		cardCountMap[card]++
 	}
 
 	var three, pair bool
+	handType := unknown
 
-	for _, count := range cardCountMap {
+	for card, count := range cardCountMap {
+		if jokers && card == "J" {
+			continue
+		}
+
 		switch count {
 		case 5:
-			return FIVE
+			// return FIVE
+			handType = FIVE
 		case 4:
-			return FOUR
+			// return FOUR
+			handType = FOUR
 		case 3:
 			three = true
 		case 2:
 			if pair {
-				return TWOPAIR
+				// return TWOPAIR
+				handType = TWOPAIR
 			} else {
 				pair = true
 			}
 		}
 	}
 
-	if three {
-		if pair {
-			return FULL
+	if handType == unknown {
+		if three {
+			if pair {
+				// return FULL
+				handType = FULL
+			} else {
+				// return THREE
+				handType = THREE
+			}
+		} else if pair {
+			// return ONEPAIR
+			handType = ONEPAIR
 		} else {
-			return THREE
+			handType = HIGH
 		}
-	} else if pair {
-		return ONEPAIR
 	}
 
-	return HIGH
+	if jokers {
+		jCount := cardCountMap["J"]
+
+		if jCount == 5 {
+			handType = FIVE
+		} else {
+			handType = jokerMap[handType][jCount]
+		}
+	}
+
+	return handType
 }
 
 var cardStrengthPart1 = "23456789TJQKA"
 var cardStrengthPart2 = "J23456789TQKA"
 
 func (h Hand) compare(other Hand, cardStrength string) int {
-	if h.handTypePart1 != other.handTypePart1 {
-		return int(h.handTypePart1) - int(other.handTypePart1)
+	if h.handType != other.handType {
+		return int(h.handType) - int(other.handType)
 	}
 
 	for i := 0; i < len(h.cards); i++ {
@@ -134,7 +177,7 @@ func orderHands(handList []Hand, cardStrength string) {
 			hand1 := handList[i]
 			hand2 := handList[i+1]
 			value := hand1.compare(hand2, cardStrength)
-			fmt.Println(hand1, hand2, value)
+			// fmt.Println(hand1, hand2, value)
 			if value > 0 {
 				handList[i+1], handList[i] = handList[i], handList[i+1]
 				swapped = true
