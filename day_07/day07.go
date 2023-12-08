@@ -54,10 +54,6 @@ func main() {
 	fmt.Println("Part 2:", calculateWinnings(handList))
 }
 
-func (h *Hand) SetHandType(handType int) {
-	h.handType = handType
-}
-
 type Hand struct {
 	cards    []string
 	handType int
