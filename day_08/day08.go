@@ -93,8 +93,11 @@ func part2(dirList string, nodeMap map[string]Node) int {
 		stepsList = append(stepsList, steps)
 	}
 
+	// Now for the interesting part. The solution is the GCD of all of the step counts for each start node
+	// prime with the first step count
 	steps := stepsList[0]
 
+	// Now calculate the GCD for all of the items
 	for i := 1; i < len(stepsList); i++ {
 		steps = lcm(steps, stepsList[i])
 	}
