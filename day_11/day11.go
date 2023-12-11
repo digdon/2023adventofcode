@@ -6,71 +6,15 @@ import (
 	"log"
 	"math"
 	"os"
-	"regexp"
 	"sort"
 )
 
 func main() {
-
-	grid, emptyColMap := loadGrid()
-	grid = expandGrid(grid, emptyColMap)
-	fmt.Println(grid)
-	galaxies := findGalaxies(grid)
-	fmt.Println(galaxies)
-
-	part1Sum := 0
-
-	for i := 0; i < len(galaxies); i++ {
-		source := galaxies[i]
-
-		for j := i + 1; j < len(galaxies); j++ {
-			target := galaxies[j]
-			dist := int(math.Abs(float64(source.x-target.x)) + math.Abs(float64(source.y-target.y)))
-			part1Sum += dist
-		}
-	}
-
-	fmt.Println("Part 1:", part1Sum)
-}
-
-func loadGrid() ([]string, map[int]bool) {
 	var inputLines []string
 	scanner := bufio.NewScanner(os.Stdin)
-	ok := scanner.Scan()
 
-	if !ok {
-		fmt.Println("No text to read - we're done")
-		return nil, nil
-	}
-
-	galaxyRE := regexp.MustCompile(`#`)
-	line := scanner.Text()
-
-	emptyColMap := map[int]bool{}
-	for i := 0; i < len(line); i++ {
-		emptyColMap[i] = true
-	}
-
-	for {
-		inputLines = append(inputLines, line)
-		matches := galaxyRE.FindAllStringIndex(line, -1)
-
-		if len(matches) > 0 {
-			for _, galaxy := range matches {
-				delete(emptyColMap, galaxy[0])
-			}
-		} else {
-			// Empty line - duplicate it
-			inputLines = append(inputLines, line)
-		}
-
-		ok = scanner.Scan()
-
-		if !ok {
-			break
-		}
-
-		line = scanner.Text()
+	for scanner.Scan() {
+		inputLines = append(inputLines, scanner.Text())
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -78,36 +22,79 @@ func loadGrid() ([]string, map[int]bool) {
 		os.Exit(1)
 	}
 
-	return inputLines, emptyColMap
+	// Part 1
+	galaxies := fetchGalaxyPositions(inputLines, 1)
+	part1Sum := calculateDistSum(galaxies)
+	fmt.Println("Part 1:", part1Sum)
+
+	// Part 2
+	galaxies = fetchGalaxyPositions(inputLines, 1000000-1)
+	part2Sum := calculateDistSum(galaxies)
+	fmt.Println("Part 2:", part2Sum)
 }
 
-func expandGrid(grid []string, emptyColMap map[int]bool) []string {
-	if len(emptyColMap) > 0 {
-		// empty columns, so we need to expand those
-		cols := []int{}
-		for k := range emptyColMap {
-			cols = append(cols, k)
-		}
-		sort.Sort(sort.Reverse(sort.IntSlice(cols)))
-		fmt.Println(cols)
+func calculateDistSum(galaxies []Point) int64 {
+	var total int64 = 0
 
-		for _, colVal := range cols {
-			for i := 0; i < len(grid); i++ {
-				grid[i] = grid[i][:colVal] + "." + grid[i][colVal:]
+	for i := 0; i < len(galaxies); i++ {
+		source := galaxies[i]
+
+		for j := i + 1; j < len(galaxies); j++ {
+			target := galaxies[j]
+			dist := int64(math.Abs(float64(source.x-target.x)) + math.Abs(float64(source.y-target.y)))
+			total += dist
+		}
+	}
+
+	return total
+}
+
+func fetchGalaxyPositions(grid []string, expansion int) []Point {
+	galaxies := []Point{}
+	emptyRows := []int{}
+	emptyColsMap := map[int]bool{}
+
+	for i := 0; i < len(grid[0]); i++ {
+		emptyColsMap[i] = true
+	}
+
+	for row := 0; row < len(grid); row++ {
+		emptyRow := true
+		for col := 0; col < len(grid[row]); col++ {
+			if grid[row][col] == '#' {
+				galaxies = append(galaxies, Point{x: col, y: row})
+				delete(emptyColsMap, col)
+				emptyRow = false
+			}
+		}
+
+		if emptyRow {
+			emptyRows = append(emptyRows, row)
+		}
+	}
+
+	emptyCols := make([]int, 0, len(emptyColsMap))
+	for k := range emptyColsMap {
+		emptyCols = append(emptyCols, k)
+	}
+
+	sort.Sort(sort.Reverse(sort.IntSlice(emptyRows)))
+	sort.Sort(sort.Reverse(sort.IntSlice(emptyCols)))
+
+	// Expand empty rows
+	for _, row := range emptyRows {
+		for i := 0; i < len(galaxies); i++ {
+			if galaxies[i].y > row {
+				galaxies[i].y += expansion
 			}
 		}
 	}
 
-	return grid
-}
-
-func findGalaxies(grid []string) []Point {
-	galaxies := []Point{}
-
-	for y := 0; y < len(grid); y++ {
-		for x := 0; x < len(grid[y]); x++ {
-			if grid[y][x] == '#' {
-				galaxies = append(galaxies, Point{x: x, y: y})
+	// Expand empty columns
+	for _, col := range emptyCols {
+		for i := 0; i < len(galaxies); i++ {
+			if galaxies[i].x > col {
+				galaxies[i].x += expansion
 			}
 		}
 	}
