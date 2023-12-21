@@ -45,7 +45,7 @@ func part2(inputLines []string) {
 		dir := DIRECTIONS[dirIndex]
 		perimeter += count
 		x, y := px+dir[1]*count, py+dir[0]*count
-		// area += (x + px) * (y - py) // Trapezoidal formula
+		// area += (py + y) * (px - x) // Trapezoidal formula
 		area += (px * y) - (py * x) // Shoelace formula
 		px, py = x, y
 	}
