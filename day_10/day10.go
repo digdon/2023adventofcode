@@ -30,12 +30,13 @@ func main() {
 		for x := 0; x < maxX; x++ {
 			if grid[y][x] == 'S' {
 				start = Point{x: x, y: y}
+				break
 			}
 		}
 	}
 
 	// Determine the start direction
-	dirList := findStartDirection(grid, start.x, start.y)
+	dirList := findStartDirNeighbours(grid, start.x, start.y)
 	dir := dirList[0]
 
 	// Walk the loop and record pieces
@@ -157,7 +158,7 @@ func main() {
 	fmt.Println("Part 2 (raycast):", count)
 }
 
-func findStartDirection(grid []string, x, y int) []direction {
+func findStartDirNeighbours(grid []string, x, y int) []direction {
 	dirList := []direction{}
 
 	for dir := dirStart + 1; dir < dirEnd; dir++ {
