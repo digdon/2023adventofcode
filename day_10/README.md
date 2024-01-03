@@ -1,0 +1,15 @@
+# Day 10: Pipe Maze
+
+Part 1 was pretty easy. I was being a little too clever and built a solution that started at the S and followed the pipe in both directions at the same time, in a sort of flood fill manner, stopping when the two ends met up. Each piece noted its two neighbours. This worked fine, of course, but was going to cause problems for part 2.
+
+There are a variety of ways of solving part 2. My first thought was to follow along the pipe, work out which side is 'inside' at every piece, and then start doing flood fills for every '.' inside the pipe that hasn't already been visited.
+
+While thinking about part 2, I eventually moved onto other days. Day 18 introduced me to Pick's theorem and the shoelace formula and when reading about that, folks on Reddit had mentioned that they used it for day 10 part 2. That certainly seemed like it might be a simpler solution. It's easy to implement, although because of how I had originally implemented part 1, I didn't have corner information in an order that would let me easily use the shoelace formula. I re-did my part 1 code to get the data how I wanted it and, in the process, my code is much simpler than my first crack at it. Nice.
+
+Pick's theorem involves taking the area of the polygon, as determined by the shoelace formula, and the number points (essentially the length of the path in this case) and doing some math. In this particular case, we know A and b and we're trying to work out i. Of course, it wasn't working quite as it should and I had to fiddle with the -1 stuff a bunch. While writing this up, a little bit of rubber ducking was happening and I realized why I had to (incorrectly) manipulate the equation. My code is now properly dealing with i = A-(b/2)+1. Of course, because shoelace gives us a value that needs to be halved, we can manipulate the equation thusly: i = (A-b)/2 + 1
+
+But why stop there? While reading through this _incredible_ feat - http://clb.confined.space/aoc2023/ - his part 2 solution uses point-in-polygon via raycasting to calculate the area. The idea is pretty simple - for each point, go to an edge of the 'image' and add the number of times you cross the edge of the polygon. If it's even, you're outside. If it's odd, you're inside. This can be simplified a bit - rather than doing this for every point, we can start from the left edge, count polygon edges as we go, and add up any '.' points that fall "inside".
+
+There's an issue with this, of course. We know | pieces are an edge. We also know that F, 7, L, and J are also possible edges - but only sometimes. If we see something like F---7, that's an edge that points downward, so there's no way any point on the current row could be directly impacted by that. Likewise, L----J is an edge that points upward, so again, nothing on the current row would be directly affected by that. However, F---J and L---7 point up and down and thus are possible edges that need to be counted.
+
+An interesting note.... in the C64 link above, he's only looking for |, L, and J as edges - nothing regarding F or 7. I have no idea why this works, but I tried it on my data and it does.

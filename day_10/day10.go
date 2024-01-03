@@ -4,13 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"math"
 	"os"
-	"strings"
+	"slices"
 )
-
-var grid []string
-var maxX, maxY int
-var visited = map[Point]bool{}
 
 func main() {
 	var inputLines []string
@@ -24,144 +21,178 @@ func main() {
 		log.Println(err)
 		os.Exit(1)
 	}
+	grid := inputLines
+	maxX, maxY := len(grid[0])-1, len(grid)-1
 
-	grid = inputLines
-	maxX, maxY = len(grid[0])-1, len(grid)-1
-
-	// Start by finding the startPoint S
-	var startPoint Point
-	for y := 0; y < len(inputLines); y++ {
-		for x := 0; x < len(inputLines[y]); x++ {
-			if inputLines[y][x] == 'S' {
-				startPoint = Point{x: x, y: y}
+	// Start by finding the start S
+	var start Point
+	for y := 0; y < maxY; y++ {
+		for x := 0; x < maxX; x++ {
+			if grid[y][x] == 'S' {
+				start = Point{x: x, y: y}
 			}
 		}
 	}
 
-	fmt.Println(startPoint)
+	// Determine the start direction
+	dirList := findStartDirection(grid, start.x, start.y)
+	dir := dirList[0]
 
-	// Using S, generate a loop
-	pointNodeMap := map[Point]*Node{}
-	startNode := generateNode(startPoint, 0)
-	queue := []Node{startNode}
-	maxDistance := 0
+	// Walk the loop and record pieces
+	pipePath := []Point{start}
+	pipeMap := map[Point]bool{start: true}
 
-	for len(queue) > 0 {
-		node := queue[0]
-		queue = queue[1:]
-		pointNodeMap[node.position] = &node
-		visited[node.position] = true
-		fmt.Println(node)
+	for x, y := start.x+directions[dir].nextX, start.y+directions[dir].nextY; !(x == start.x && y == start.y); x, y = x+directions[dir].nextX, y+directions[dir].nextY {
+		pipePath = append(pipePath, Point{x, y})
+		pipeMap[Point{x, y}] = true
+		ch := grid[y][x]
 
-		if node.dist > maxDistance {
-			maxDistance = node.dist
+		switch ch {
+		case 'F':
+			if dir == LEFT {
+				dir = DOWN
+			} else {
+				dir = RIGHT
+			}
+
+		case '7':
+			if dir == RIGHT {
+				dir = DOWN
+			} else {
+				dir = LEFT
+			}
+
+		case 'L':
+			if dir == DOWN {
+				dir = RIGHT
+			} else {
+				dir = UP
+			}
+
+		case 'J':
+			if dir == DOWN {
+				dir = LEFT
+			} else {
+				dir = UP
+			}
 		}
+	}
 
-		if len(node.neighbours) > 0 {
-			for _, nPoint := range node.neighbours {
-				_, ok := visited[nPoint]
+	fmt.Println("Part 1:", (len(pipePath)+1)/2)
 
-				if !ok {
-					nNode := generateNode(nPoint, node.dist+1)
-					queue = append(queue, nNode)
+	// Part 2 stuff - shoelace and Pick's theorem
+	pipePath = append(pipePath, start)
+	area := 0
+	for i := 1; i < len(pipePath); i++ {
+		px, py := pipePath[i-1].x, pipePath[i-1].y
+		x, y := pipePath[i].x, pipePath[i].y
+		area += (px * y) - (py * x)
+	}
+
+	value := (int(math.Abs(float64(area)))-(len(pipePath)-1))/2 + 1
+	fmt.Println("Part 2 (Pick/shoelace):", value)
+
+	// Part 2 - raycasting
+	// First we need to replace 'S' with the correct pipe piece, based on what's attached to it
+	var startChar byte
+	if slices.Contains(dirList, UP) {
+		if slices.Contains(dirList, RIGHT) {
+			startChar = 'L'
+		} else if slices.Contains(dirList, LEFT) {
+			startChar = 'J'
+		} else if slices.Contains(dirList, DOWN) {
+			startChar = '|'
+		}
+	} else if slices.Contains(dirList, DOWN) {
+		if slices.Contains(dirList, RIGHT) {
+			startChar = 'F'
+		} else if slices.Contains(dirList, LEFT) {
+			startChar = '7'
+		}
+	} else if slices.Contains(dirList, LEFT) && slices.Contains(dirList, RIGHT) {
+		startChar = '-'
+	} else {
+		fmt.Println("Some kind of error?")
+		os.Exit(1)
+	}
+
+	grid[start.y] = fmt.Sprintf("%s%c%s", grid[start.y][:start.x], startChar, grid[start.y][start.x+1:])
+
+	var tempPoint Point
+	count := 0
+	for y := 0; y < maxY; y++ {
+		in := false
+		var prevCorner byte
+		for x := 0; x < maxX; x++ {
+			tempPoint.x = x
+			tempPoint.y = y
+
+			if pipeMap[tempPoint] {
+				ch := grid[y][x]
+
+				// if ch == '|' || ch == 'L' || ch == 'J' {
+				// 	in = !in
+				// }
+				if ch == '|' {
+					in = !in
+				} else if ch == 'L' || ch == 'F' {
+					prevCorner = ch
+				} else if ch == 'J' {
+					if prevCorner == 'F' {
+						in = !in
+					}
+					prevCorner = 0
+				} else if ch == '7' {
+					if prevCorner == 'L' {
+						in = !in
+					}
+					prevCorner = 0
 				}
+			} else if in {
+				count++
 			}
 		}
 	}
 
-	fmt.Println("Part 1:", maxDistance)
-
-	// Find a corner
-	corner := findACorner(startNode, pointNodeMap)
-	corner.inside = Point{-1, -2}
-	fmt.Println(corner)
-	fmt.Println(pointNodeMap[corner.position])
-
-	// Calculate inside
-
-	// Generate grid
-	// for y := 0; y < len(grid); y++ {
-	// 	for x := 0; x < len(grid[y]); x++ {
-	// 		value, ok := pointDistMap[Point{x: x, y: y}]
-
-	// 		if ok {
-	// 			fmt.Printf("%3d", value)
-	// 		} else {
-	// 			fmt.Print(" . ")
-	// 		}
-	// 	}
-
-	// 	fmt.Println()
-	// }
+	fmt.Println("Part 2 (raycast):", count)
 }
 
-func findACorner(startNode Node, pointNodeMap map[Point]*Node) *Node {
-	corner := &startNode
+func findStartDirection(grid []string, x, y int) []direction {
+	dirList := []direction{}
 
-	for {
-		if strings.IndexByte("F7LJ", corner.pipeType) != -1 {
-			break
-		} else {
-			corner = pointNodeMap[corner.neighbours[0]]
-		}
-	}
+	for dir := dirStart + 1; dir < dirEnd; dir++ {
+		nextX, nextY := x+directions[dir].nextX, y+directions[dir].nextY
 
-	return corner
-}
-
-func generateNode(point Point, dist int) Node {
-	neighbours := []Point{}
-
-	// Look in each direction
-	for i := 0; i < len(directions); i++ {
-		dir := directions[i]
-		x := point.x + dir.nextX
-		y := point.y + dir.nextY
-
-		if x < 0 || x > maxX || y < 0 || y > maxY {
-			// out of bounds
+		if nextX < 0 || nextX > len(grid[0])-1 || nextY < 0 || nextY > len(grid)-1 {
 			continue
 		}
 
-		pipe := grid[y][x]
-
-		if !isPipeAllowed(pipe, dir.allowedPipes) {
-			// Pipe is not an allowable type, so it's not connected
-			continue
-		}
-
-		newPoint := Point{x: x, y: y}
-		neighbours = append(neighbours, newPoint)
-		//		visited[newPoint] = true
-	}
-
-	pipe := grid[point.y][point.x]
-	return Node{pipeType: pipe, position: point, dist: dist, neighbours: neighbours}
-}
-
-func isPipeAllowed(char byte, allowed []byte) bool {
-	if char == '.' {
-		return false
-	}
-
-	if char == 'S' {
-		return true
-	}
-
-	for _, val := range allowed {
-		if val == char {
-			return true
+		ch := grid[nextY][nextX]
+		if slices.Contains(directions[dir].allowedPipes, ch) {
+			dirList = append(dirList, dir)
 		}
 	}
 
-	return false
+	return dirList
 }
+
+type direction int
+
+const (
+	dirStart direction = iota
+	RIGHT
+	DOWN
+	LEFT
+	UP
+	dirEnd
+)
 
 var directions = []Direction{
-	{nextX: 0, nextY: -1, allowedPipes: []byte{'|', '7', 'F'}}, // up
+	{},
 	{nextX: 1, nextY: 0, allowedPipes: []byte{'-', 'J', '7'}},  // right
 	{nextX: 0, nextY: 1, allowedPipes: []byte{'|', 'L', 'J'}},  // down
 	{nextX: -1, nextY: 0, allowedPipes: []byte{'-', 'L', 'F'}}, // left
+	{nextX: 0, nextY: -1, allowedPipes: []byte{'|', '7', 'F'}}, // up
 }
 
 type Direction struct {
@@ -171,12 +202,4 @@ type Direction struct {
 
 type Point struct {
 	x, y int
-}
-
-type Node struct {
-	pipeType   byte
-	position   Point
-	dist       int
-	neighbours []Point
-	inside     Point
 }
