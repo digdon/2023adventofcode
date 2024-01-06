@@ -24,7 +24,6 @@ func main() {
 
 	part1(inputLines)
 	part2(inputLines)
-
 }
 
 var DIRECTIONS = [][]int64{
@@ -50,9 +49,13 @@ func part2(inputLines []string) {
 		px, py = x, y
 	}
 
-	// Shoelace formula would then take the total area and divide by 2. Pick's theorem divides the perimeter by 2
-	// Based on basic math, we can combine them
-	area = (perimeter+area)/2 + 1 // Pick's theorem (more or less - we're solving for i + b)
+	// We've calculated the area, via the shoelace formula (well, it still needs to be halved). We have the perimeter. From there, we can use Pick's theorem to work
+	// out the number of interior points. Pick's theorem is A = i + b/2 - 1. Rearranging to solve for i, we end up with i = A - b/2 + 1
+	// The area calculated by shoelace needs to be divided by 2 -> i = A/2 - b/2 + 1. That can be simplified to i = (A-b)/2 + 1
+	i := (area-perimeter)/2 + 1
 
-	fmt.Println("Part 2:", area)
+	// We already had the number of blocks in the perimeter (b) and now we have the internal blocks. Just add 'em up
+	blocks := i + perimeter
+
+	fmt.Println("Part 2:", blocks)
 }
